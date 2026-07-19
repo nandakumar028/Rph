@@ -71,3 +71,24 @@ export async function signup(prevState: any, formData: FormData) {
   revalidatePath('/', 'layout')
   redirect('/dashboard')
 }
+
+export async function signInWithGithub() {
+  const supabase = await createClient()
+  const origin = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'github',
+    options: {
+      redirectTo: `${origin}/auth/callback`,
+    },
+  })
+
+  if (error) {
+    console.error('OAuth error', error)
+    redirect('/login?error=oauth_failed')
+  }
+
+  if (data.url) {
+    redirect(data.url)
+  }
+}

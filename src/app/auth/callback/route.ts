@@ -1,5 +1,6 @@
 import { createClient } from '@/utils/supabase/server'
 import { NextResponse } from 'next/server'
+import { createOrganization, updateUserProfile } from '@/utils/supabase/queries'
 
 export async function GET(request: Request) {
   // The `/auth/callback` route is required for the server-side auth flow implemented
@@ -12,9 +13,28 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createClient()
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
     
-    if (!error) {
+    if (!error && data?.user) {
+      // Verify if the user profile has an associated organization.
+      // If it doesn't (first time OAuth signup), provision one automatically.
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('org_id')
+        .eq('id', data.user.id)
+        .single()
+
+      if (!profile || !profile.org_id) {
+        const email = data.user.email || 'OAuth User'
+        const name = data.user.user_metadata?.full_name || email.split('@')[0]
+        const subdomain = `${name.toLowerCase().replace(/[^a-z0-9]/g, '')}-${Math.floor(Math.random() * 10000)}`
+        
+        const org = await createOrganization(supabase, `${name}'s Org`, subdomain)
+        if (org) {
+          await updateUserProfile(supabase, data.user.id, { org_id: org.id })
+        }
+      }
+
       return NextResponse.redirect(`${origin}${next}`)
     }
   }
