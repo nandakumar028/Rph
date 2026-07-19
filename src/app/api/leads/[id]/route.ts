@@ -9,6 +9,8 @@ export async function GET(
 ) {
   const { id } = await params
   const supabase = await createClient()
+  const profile = await getUserProfile(supabase)
+  if (!profile) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const lead = await getLead(supabase, id)
   if (!lead) return NextResponse.json({ error: 'Lead not found' }, { status: 404 })

@@ -21,14 +21,22 @@ export default function SignupPage() {
           </div>
         </div>
       </div>
-      <div className="relative hidden bg-muted lg:block">
+      <div className="relative hidden lg:block overflow-hidden">
         <Image
           src="/auth-bg.jpg"
           alt="Abstract blue wavy background"
-          width={1000}
-          height={1000}
-          className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.8]"
+          fill
+          className="object-cover dark:brightness-[0.75]"
+          priority
         />
+        {/* overlay gradient for text legibility */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-black/30 via-transparent to-transparent" />
+        <div className="absolute bottom-10 left-10 right-10 text-white">
+          <p className="text-2xl font-bold leading-snug drop-shadow">
+            &ldquo;We closed $486K in new deals in our first month with CRM Portal.&rdquo;
+          </p>
+          <p className="mt-3 text-sm text-white/70">&mdash; Marcus Reyes, CRO at Globex Inc</p>
+        </div>
       </div>
     </div>
   )

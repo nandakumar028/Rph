@@ -5,6 +5,8 @@ import { getDeals, createDeal, getUserProfile } from '@/utils/supabase/queries'
 // GET /api/deals
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
+  const profile = await getUserProfile(supabase)
+  if (!profile) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { searchParams } = new URL(request.url)
 
   const opts = {

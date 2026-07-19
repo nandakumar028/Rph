@@ -5,6 +5,8 @@ import { getCompanies, createCompany, getUserProfile } from '@/utils/supabase/qu
 // GET /api/companies
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
+  const profile = await getUserProfile(supabase)
+  if (!profile) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { searchParams } = new URL(request.url)
 
   const opts = {
