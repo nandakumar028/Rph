@@ -29,7 +29,26 @@ export async function updateSession(request: NextRequest) {
 
   // IMPORTANT: Do not remove this getUser() call.
   // It is required to refresh the session token if it is expired.
-  await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // Define routes that do not require authentication
+  const isAuthRoute = request.nextUrl.pathname.startsWith('/login') || 
+                      request.nextUrl.pathname.startsWith('/signup') || 
+                      request.nextUrl.pathname === '/'
+
+  // Redirect unauthenticated users to the login page
+  if (!user && !isAuthRoute) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    return NextResponse.redirect(url)
+  }
+
+  // Redirect authenticated users away from login/signup pages
+  if (user && (request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/signup'))) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/dashboard'
+    return NextResponse.redirect(url)
+  }
 
   return supabaseResponse
 }
