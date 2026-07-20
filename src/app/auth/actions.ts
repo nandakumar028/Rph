@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import { createOrganization, updateUserProfile } from '@/utils/supabase/queries'
 
-export async function login(prevState: any, formData: FormData) {
+export async function login(prevState: unknown, formData: FormData) {
   const email = formData.get('email') as string
   const password = formData.get('password') as string
 
@@ -28,7 +28,7 @@ export async function login(prevState: any, formData: FormData) {
   redirect('/dashboard')
 }
 
-export async function signup(prevState: any, formData: FormData) {
+export async function signup(prevState: unknown, formData: FormData) {
   const email = formData.get('email') as string
   const password = formData.get('password') as string
   const name = formData.get('name') as string
@@ -91,4 +91,11 @@ export async function signInWithGithub() {
   if (data.url) {
     redirect(data.url)
   }
+}
+
+export async function signout() {
+  const supabase = await createClient()
+  await supabase.auth.signOut()
+  revalidatePath('/', 'layout')
+  redirect('/')
 }
