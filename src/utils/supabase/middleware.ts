@@ -37,9 +37,11 @@ export async function updateSession(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   // Define routes that do not require authentication
-  const isAuthRoute = request.nextUrl.pathname.startsWith('/login') || 
-                      request.nextUrl.pathname.startsWith('/signup') || 
-                      request.nextUrl.pathname === '/'
+  const isAuthRoute =
+    request.nextUrl.pathname === '/' ||
+    request.nextUrl.pathname.startsWith('/login') ||
+    request.nextUrl.pathname.startsWith('/signup') ||
+    request.nextUrl.pathname.startsWith('/auth/')
 
   // Redirect unauthenticated users to the login page
   if (!user && !isAuthRoute) {

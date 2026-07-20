@@ -1,7 +1,14 @@
+import type { Metadata } from 'next'
 import { GalleryVerticalEnd } from "lucide-react"
 import Image from "next/image"
 
 import { LoginForm } from "@/components/login-form"
+
+export const metadata: Metadata = {
+  title: 'Sign In',
+  description: 'Sign in to your CRM Portal account to manage your sales pipeline.',
+  robots: { index: false, follow: false },
+}
 
 export default function LoginPage() {
   return (

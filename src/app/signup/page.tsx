@@ -1,7 +1,14 @@
+import type { Metadata } from 'next'
 import { GalleryVerticalEnd } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { SignupForm } from "@/components/signup-form"
+
+export const metadata: Metadata = {
+  title: 'Create Account',
+  description: 'Create your CRM Portal account and start managing your sales pipeline today.',
+  robots: { index: false, follow: false },
+}
 
 export default function SignupPage() {
   return (

@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import { getUserProfile } from '@/utils/supabase/queries'
@@ -9,10 +10,16 @@ import {
   Shield,
   LogOut,
   Layers,
-  Copy,
   CheckCircle2,
   Clock,
+  CalendarDays,
 } from 'lucide-react'
+
+export const metadata: Metadata = {
+  title: 'Dashboard',
+  description: 'Your CRM Portal account overview and authentication details.',
+  robots: { index: false, follow: false }, // Private page — never index
+}
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -35,10 +42,17 @@ export default async function DashboardPage() {
     ? (rolesRaw[0] as RoleShape) ?? null
     : (rolesRaw as RoleShape | null)
 
+  const displayName = profile.email?.split('@')[0] ?? 'User'
+  const joinedDate = new Date(profile.created_at ?? Date.now()).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
       {/* Ambient background orbs */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+      <div className="fixed inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
         <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-violet-600/10 rounded-full blur-[120px]" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[400px] h-[400px] bg-blue-600/10 rounded-full blur-[120px]" />
       </div>
@@ -54,6 +68,7 @@ export default async function DashboardPage() {
           </div>
           <form action={signout}>
             <button
+              id="signout-nav-btn"
               type="submit"
               className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-white/10 transition-all duration-200 cursor-pointer"
             >
@@ -73,12 +88,10 @@ export default async function DashboardPage() {
             Authenticated
           </div>
           <h1 className="text-4xl font-bold tracking-tight mb-2">
-            Welcome back
-            <span className="text-slate-400 font-normal ml-2 text-2xl">
-              {profile.email?.split('@')[0]}
-            </span>
+            Welcome back,{' '}
+            <span className="text-violet-400">{displayName}</span>
           </h1>
-          <p className="text-slate-400">Here are your account details and authentication information.</p>
+          <p className="text-slate-400">Your account details and authentication information are below.</p>
         </div>
 
         {/* Cards Grid */}
@@ -86,18 +99,10 @@ export default async function DashboardPage() {
 
           {/* User Profile Card */}
           <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-6 backdrop-blur-sm hover:border-white/[0.15] transition-colors">
-            <div className="flex items-center gap-3 mb-5">
-              <div className="size-10 rounded-xl bg-violet-500/20 border border-violet-500/20 flex items-center justify-center">
-                <User className="size-5 text-violet-400" />
-              </div>
-              <div>
-                <h2 className="font-semibold text-white">User Profile</h2>
-                <p className="text-xs text-slate-500">Authentication identity</p>
-              </div>
-            </div>
+            <CardHeader icon={<User className="size-5 text-violet-400" />} iconBg="bg-violet-500/20 border-violet-500/20" title="User Profile" subtitle="Authentication identity" />
             <div className="space-y-4">
-              <InfoRow label="User ID" value={profile.id} mono copyable />
-              <InfoRow label="Email" value={profile.email} />
+              <InfoRow label="User ID" value={profile.id} mono />
+              <InfoRow label="Email Address" value={profile.email} />
               <InfoRow
                 label="Account Status"
                 value={profile.status ?? 'active'}
@@ -109,27 +114,14 @@ export default async function DashboardPage() {
 
           {/* Organization Card */}
           <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-6 backdrop-blur-sm hover:border-white/[0.15] transition-colors">
-            <div className="flex items-center gap-3 mb-5">
-              <div className="size-10 rounded-xl bg-blue-500/20 border border-blue-500/20 flex items-center justify-center">
-                <Building2 className="size-5 text-blue-400" />
-              </div>
-              <div>
-                <h2 className="font-semibold text-white">Organization</h2>
-                <p className="text-xs text-slate-500">Tenant workspace details</p>
-              </div>
-            </div>
+            <CardHeader icon={<Building2 className="size-5 text-blue-400" />} iconBg="bg-blue-500/20 border-blue-500/20" title="Organization" subtitle="Tenant workspace details" />
             <div className="space-y-4">
               {org ? (
                 <>
                   <InfoRow label="Org Name" value={org.name} />
-                  <InfoRow label="Org ID" value={org.id} mono copyable />
+                  <InfoRow label="Org ID" value={org.id} mono />
                   <InfoRow label="Subdomain" value={org.subdomain} mono />
-                  <InfoRow
-                    label="Plan"
-                    value={org.plan_tier ?? 'free'}
-                    badge
-                    badgeColor="violet"
-                  />
+                  <InfoRow label="Plan" value={org.plan_tier ?? 'free'} badge badgeColor="violet" />
                 </>
               ) : (
                 <p className="text-sm text-slate-500">No organization linked yet.</p>
@@ -139,46 +131,30 @@ export default async function DashboardPage() {
 
           {/* Role & Permissions Card */}
           <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-6 backdrop-blur-sm hover:border-white/[0.15] transition-colors">
-            <div className="flex items-center gap-3 mb-5">
-              <div className="size-10 rounded-xl bg-amber-500/20 border border-amber-500/20 flex items-center justify-center">
-                <Shield className="size-5 text-amber-400" />
-              </div>
-              <div>
-                <h2 className="font-semibold text-white">Role & Permissions</h2>
-                <p className="text-xs text-slate-500">Access control details</p>
-              </div>
-            </div>
+            <CardHeader icon={<Shield className="size-5 text-amber-400" />} iconBg="bg-amber-500/20 border-amber-500/20" title="Role & Permissions" subtitle="Access control details" />
             <div className="space-y-4">
               {role ? (
                 <>
                   <InfoRow label="Role" value={role.name} badge badgeColor="amber" />
-                  <InfoRow label="Role ID" value={role.id} mono copyable />
+                  <InfoRow label="Role ID" value={role.id} mono />
                 </>
               ) : (
-                <p className="text-sm text-slate-500">No role assigned yet.</p>
+                <InfoRow label="Role" value="Member (default)" badge badgeColor="amber" />
               )}
             </div>
           </div>
 
           {/* Session Card */}
           <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-6 backdrop-blur-sm hover:border-white/[0.15] transition-colors">
-            <div className="flex items-center gap-3 mb-5">
-              <div className="size-10 rounded-xl bg-teal-500/20 border border-teal-500/20 flex items-center justify-center">
-                <Clock className="size-5 text-teal-400" />
-              </div>
-              <div>
-                <h2 className="font-semibold text-white">Session Info</h2>
-                <p className="text-xs text-slate-500">Active authentication session</p>
-              </div>
-            </div>
+            <CardHeader icon={<Clock className="size-5 text-teal-400" />} iconBg="bg-teal-500/20 border-teal-500/20" title="Session Info" subtitle="Active authentication session" />
             <div className="space-y-4">
-              <InfoRow label="Provider" value="Email / Password" />
-              <InfoRow label="Session" badge value="Active" badgeColor="emerald" />
+              <InfoRow label="Auth Provider" value="Email / Password" />
+              <InfoRow label="Session Status" badge value="Active" badgeColor="emerald" />
             </div>
-
             <div className="mt-6 pt-5 border-t border-white/5">
               <form action={signout}>
                 <button
+                  id="signout-session-btn"
                   type="submit"
                   className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 hover:border-red-500/40 transition-all duration-200 text-sm font-medium cursor-pointer"
                 >
@@ -191,29 +167,52 @@ export default async function DashboardPage() {
 
         </div>
 
-        {/* Contact Info Footer */}
-        <div className="mt-8 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-6 backdrop-blur-sm">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="size-10 rounded-xl bg-pink-500/20 border border-pink-500/20 flex items-center justify-center">
-              <Mail className="size-5 text-pink-400" />
-            </div>
-            <div>
-              <h2 className="font-semibold text-white">Contact & Identity</h2>
-              <p className="text-xs text-slate-500">Full authenticated user information</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+        {/* Full Identity Footer */}
+        <div className="mt-5 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-6 backdrop-blur-sm">
+          <CardHeader icon={<Mail className="size-5 text-pink-400" />} iconBg="bg-pink-500/20 border-pink-500/20" title="Contact & Identity" subtitle="Full authenticated user record" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mt-1">
             <InfoRow label="Email Address" value={profile.email} />
-            <InfoRow label="Profile ID" value={profile.id} mono copyable />
+            <InfoRow label="Profile ID" value={profile.id} mono />
             {org && <InfoRow label="Workspace" value={org.subdomain} mono />}
           </div>
+        </div>
+
+        {/* Member Since */}
+        <div className="mt-5 flex items-center gap-2 text-slate-600 text-xs">
+          <CalendarDays className="size-3.5" />
+          Member since {joinedDate}
         </div>
       </main>
     </div>
   )
 }
 
-// ── Helper component ──────────────────────────────────────────────────────────
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+function CardHeader({
+  icon,
+  iconBg,
+  title,
+  subtitle,
+}: {
+  icon: React.ReactNode
+  iconBg: string
+  title: string
+  subtitle: string
+}) {
+  return (
+    <div className="flex items-center gap-3 mb-5">
+      <div className={`size-10 rounded-xl border flex items-center justify-center ${iconBg}`}>
+        {icon}
+      </div>
+      <div>
+        <h2 className="font-semibold text-white">{title}</h2>
+        <p className="text-xs text-slate-500">{subtitle}</p>
+      </div>
+    </div>
+  )
+}
+
 type BadgeColor = 'emerald' | 'amber' | 'violet' | 'blue' | 'teal'
 
 function InfoRow({
@@ -222,14 +221,12 @@ function InfoRow({
   mono = false,
   badge = false,
   badgeColor = 'emerald',
-  copyable = false,
 }: {
   label: string
   value?: string | null
   mono?: boolean
   badge?: boolean
   badgeColor?: BadgeColor
-  copyable?: boolean
 }) {
   const badgeClasses: Record<BadgeColor, string> = {
     emerald: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
@@ -244,22 +241,17 @@ function InfoRow({
       <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{label}</span>
       {badge ? (
         <span
-          className={`inline-flex w-fit items-center gap-1 px-2.5 py-1 rounded-full border text-xs font-semibold capitalize ${badgeClasses[badgeColor]}`}
+          className={`inline-flex w-fit items-center px-2.5 py-1 rounded-full border text-xs font-semibold capitalize ${badgeClasses[badgeColor]}`}
         >
           {value ?? '—'}
         </span>
       ) : (
-        <div className="flex items-center gap-2 group">
-          <span
-            className={`text-sm text-slate-200 truncate max-w-[240px] ${mono ? 'font-mono text-xs text-slate-400' : ''}`}
-            title={value ?? undefined}
-          >
-            {value ?? '—'}
-          </span>
-          {copyable && value && (
-            <Copy className="size-3.5 text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
-          )}
-        </div>
+        <span
+          className={`text-sm text-slate-200 break-all ${mono ? 'font-mono text-xs text-slate-400' : ''}`}
+          title={value ?? undefined}
+        >
+          {value ?? '—'}
+        </span>
       )}
     </div>
   )
