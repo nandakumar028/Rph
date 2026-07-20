@@ -22,8 +22,18 @@ export default async function DashboardPage() {
     redirect('/login')
   }
 
-  const org = profile.organizations as { id: string; name: string; subdomain: string; plan_tier: string } | null
-  const role = profile.roles as { id: string; name: string } | null
+  type OrgShape = { id: string; name: string; subdomain: string; plan_tier: string }
+  type RoleShape = { id: string; name: string }
+
+  const orgsRaw = profile.organizations as unknown
+  const org: OrgShape | null = Array.isArray(orgsRaw)
+    ? (orgsRaw[0] as OrgShape) ?? null
+    : (orgsRaw as OrgShape | null)
+
+  const rolesRaw = profile.roles as unknown
+  const role: RoleShape | null = Array.isArray(rolesRaw)
+    ? (rolesRaw[0] as RoleShape) ?? null
+    : (rolesRaw as RoleShape | null)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
