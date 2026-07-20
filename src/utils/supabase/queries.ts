@@ -19,6 +19,7 @@ export async function getUserProfile(supabase: SupabaseClient) {
       status,
       org_id,
       role_id,
+      created_at,
       organizations (
         id,
         name,

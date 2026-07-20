@@ -43,7 +43,8 @@ export default async function DashboardPage() {
     : (rolesRaw as RoleShape | null)
 
   const displayName = profile.email?.split('@')[0] ?? 'User'
-  const joinedDate = new Date(profile.created_at ?? Date.now()).toLocaleDateString('en-US', {
+  const rawCreatedAt = (profile as unknown as Record<string, unknown>).created_at
+  const joinedDate = new Date(typeof rawCreatedAt === 'string' ? rawCreatedAt : Date.now()).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
