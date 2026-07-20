@@ -7,7 +7,7 @@ export async function middleware(request: NextRequest) {
   } catch (error) {
     console.error('Middleware Error:', error)
     // If Supabase client fails to initialize, allow the request to continue
-    return NextResponse.next({ request })
+    return NextResponse.next()
   }
 }
 
