@@ -10,9 +10,9 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
-    "@supabase/server": "^1.4.0",
+    "@supabase/server": "^1.4.1",
     "@supabase/ssr": "^0.12.3",
-    "@supabase/supabase-js": "^2.110.7",
+    "@supabase/supabase-js": "^2.110.8",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.24.0",
@@ -30,6 +30,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
+    "supabase": "^2.109.1",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

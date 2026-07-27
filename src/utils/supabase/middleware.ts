@@ -43,31 +43,51 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/signup') ||
     request.nextUrl.pathname.startsWith('/auth/')
 
-  // Redirect unauthenticated users to the login page
+  // ── Unauthenticated user → login ─────────────────────────────────────────
+  // We must copy the Supabase session cookies onto every redirect response.
+  // Without this, the PKCE verifier cookie set by updateSession() would be
+  // lost and the next request would start a brand-new anonymous session.
   if (!user && !isAuthRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     const redirectResponse = NextResponse.redirect(url)
-    
-    // Preserve cookies on redirect
+
     supabaseResponse.cookies.getAll().forEach((cookie) => {
-      redirectResponse.cookies.set(cookie.name, cookie.value, cookie)
+      redirectResponse.cookies.set(cookie.name, cookie.value, {
+        domain:   cookie.domain,
+        path:     cookie.path,
+        maxAge:   cookie.maxAge,
+        httpOnly: cookie.httpOnly,
+        secure:   cookie.secure,
+        // sameSite is typed as string on RequestCookies but the
+        // ResponseCookies setter requires the narrower union type.
+        sameSite: cookie.sameSite as 'lax' | 'strict' | 'none' | boolean | undefined,
+      })
     })
-    
+
     return redirectResponse
   }
 
-  // Redirect authenticated users away from login/signup pages
-  if (user && (request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/signup'))) {
+  // ── Authenticated user → dashboard (skip login/signup) ───────────────────
+  if (user && (
+    request.nextUrl.pathname.startsWith('/login') ||
+    request.nextUrl.pathname.startsWith('/signup')
+  )) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
     const redirectResponse = NextResponse.redirect(url)
-    
-    // Preserve cookies on redirect
+
     supabaseResponse.cookies.getAll().forEach((cookie) => {
-      redirectResponse.cookies.set(cookie.name, cookie.value, cookie)
+      redirectResponse.cookies.set(cookie.name, cookie.value, {
+        domain:   cookie.domain,
+        path:     cookie.path,
+        maxAge:   cookie.maxAge,
+        httpOnly: cookie.httpOnly,
+        secure:   cookie.secure,
+        sameSite: cookie.sameSite as 'lax' | 'strict' | 'none' | boolean | undefined,
+      })
     })
-    
+
     return redirectResponse
   }
 

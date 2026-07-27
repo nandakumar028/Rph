@@ -3,7 +3,8 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
-import { createOrganization, updateUserProfile } from '@/utils/supabase/queries'
+// Note: org + role auto-provisioning is handled by the handle_new_user DB trigger —
+// no server-side round-trips required here.
 
 export async function login(prevState: unknown, formData: FormData) {
   const email = formData.get('email') as string
@@ -35,57 +36,55 @@ export async function login(prevState: unknown, formData: FormData) {
 }
 
 export async function signup(prevState: unknown, formData: FormData) {
-  const email = formData.get('email') as string
-  const password = formData.get('password') as string
-  const name = formData.get('name') as string
-  const confirmPassword = formData.get('confirm-password') as string
+  try {
+    const email = formData.get('email') as string
+    const password = formData.get('password') as string
+    const name = formData.get('name') as string
+    const confirmPassword = formData.get('confirm-password') as string
 
-  if (!email || !password || !name) {
-    return { error: 'Name, email, and password are required.' }
-  }
-
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  if (!emailRegex.test(email)) {
-    return { error: 'Please enter a valid email address.' }
-  }
-
-  if (name.trim().length < 2) {
-    return { error: 'Name must be at least 2 characters.' }
-  }
-
-  if (password.length < 8) {
-    return { error: 'Password must be at least 8 characters long.' }
-  }
-
-  if (password !== confirmPassword) {
-    return { error: 'Passwords do not match.' }
-  }
-
-  const supabase = await createClient()
-
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: { full_name: name.trim() },
-    },
-  })
-
-  if (error) {
-    if (error.message.toLowerCase().includes('already registered')) {
-      return { error: 'An account with this email already exists. Please log in.' }
+    if (!email || !password || !name) {
+      return { error: 'Name, email, and password are required.' }
     }
-    return { error: error.message }
-  }
 
-  // Auto-provision an organization for the new user
-  if (data.user) {
-    const safeName = name.trim().toLowerCase().replace(/[^a-z0-9]/g, '')
-    const subdomain = `${safeName}-${Math.floor(Math.random() * 10000)}`
-    const org = await createOrganization(supabase, `${name.trim()}'s Org`, subdomain)
-    if (org) {
-      await updateUserProfile(supabase, data.user.id, { org_id: org.id })
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      return { error: 'Please enter a valid email address.' }
     }
+
+    if (name.trim().length < 2) {
+      return { error: 'Name must be at least 2 characters.' }
+    }
+
+    if (password.length < 8) {
+      return { error: 'Password must be at least 8 characters long.' }
+    }
+
+    if (password !== confirmPassword) {
+      return { error: 'Passwords do not match.' }
+    }
+
+    const supabase = await createClient()
+
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: name.trim() },
+      },
+    })
+
+    if (error) {
+      const errorMessage = typeof error.message === 'string' ? error.message : JSON.stringify(error)
+      if (errorMessage.toLowerCase().includes('already registered')) {
+        return { error: 'An account with this email already exists. Please log in.' }
+      }
+      return { error: errorMessage || 'An unexpected error occurred during signup.' }
+    }
+
+    // Auto-provisioning is now handled database-side in the handle_new_user trigger function during signup to eliminate sequential network roundtrips.
+  } catch (err: any) {
+    console.error('Signup action caught an exception:', err)
+    return { error: err?.message || 'An unexpected server error occurred.' }
   }
 
   revalidatePath('/', 'layout')
