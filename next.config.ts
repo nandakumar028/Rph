@@ -53,6 +53,11 @@ const nextConfig: NextConfig = {
   compress: true,
   poweredByHeader: false, // Remove "X-Powered-By: Next.js" header
 
+  // ─── Supabase SSR ─────────────────────────────────────────────────────────
+  // @supabase/ssr uses Node.js crypto/net APIs not available in Edge runtime.
+  // Marking it as external prevents it from being bundled into Edge workers.
+  serverExternalPackages: ['@supabase/ssr', '@supabase/supabase-js'],
+
   // ─── TypeScript / ESLint ─────────────────────────────────────────────────
   typescript: {
     ignoreBuildErrors: false,
