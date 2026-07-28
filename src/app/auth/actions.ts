@@ -6,6 +6,37 @@ import { createClient } from '@/utils/supabase/server'
 // Note: org + role auto-provisioning is handled by the handle_new_user DB trigger —
 // no server-side round-trips required here.
 
+/**
+ * Safely extract a human-readable message from any Supabase AuthError.
+ *
+ * Problem: AuthApiError stores properties as non-enumerable on the class
+ * prototype, so `JSON.stringify(error)` always returns "{}".
+ * Solution: walk own + inherited enumerable/non-enumerable property names.
+ */
+function extractErrorMessage(error: unknown): string {
+  if (!error) return 'An unexpected error occurred.'
+  if (typeof error === 'string') return error
+
+  const e = error as Record<string, unknown>
+
+  // Most common: standard .message field
+  if (typeof e.message === 'string' && e.message) return e.message
+
+  // OAuth / Supabase API errors often include error_description
+  if (typeof e.error_description === 'string' && e.error_description)
+    return e.error_description
+
+  // Fallback: serialise with all own property names to avoid the {} trap
+  try {
+    const serialised = JSON.stringify(error, Object.getOwnPropertyNames(error))
+    if (serialised && serialised !== '{}') return serialised
+  } catch {
+    // ignore circular-reference errors
+  }
+
+  return 'An unexpected error occurred.'
+}
+
 export async function login(prevState: unknown, formData: FormData) {
   const email = formData.get('email') as string
   const password = formData.get('password') as string
@@ -24,11 +55,12 @@ export async function login(prevState: unknown, formData: FormData) {
   const { error } = await supabase.auth.signInWithPassword({ email, password })
 
   if (error) {
+    const msg = extractErrorMessage(error)
     // Don't expose internal error details — return a safe message
-    if (error.message.toLowerCase().includes('invalid')) {
+    if (msg.toLowerCase().includes('invalid')) {
       return { error: 'Invalid email or password. Please try again.' }
     }
-    return { error: error.message }
+    return { error: msg }
   }
 
   revalidatePath('/', 'layout')
@@ -74,17 +106,29 @@ export async function signup(prevState: unknown, formData: FormData) {
     })
 
     if (error) {
-      const errorMessage = typeof error.message === 'string' ? error.message : JSON.stringify(error)
-      if (errorMessage.toLowerCase().includes('already registered')) {
+      const msg = extractErrorMessage(error)
+      console.error('[signup] Supabase signUp error:', msg)
+      if (
+        msg.toLowerCase().includes('already registered') ||
+        msg.toLowerCase().includes('user already registered') ||
+        msg.toLowerCase().includes('email already')
+      ) {
         return { error: 'An account with this email already exists. Please log in.' }
       }
-      return { error: errorMessage || 'An unexpected error occurred during signup.' }
+      return { error: msg }
+    }
+
+    // Sanity-check: Supabase may return a fake user object (identities: [])
+    // if "Confirm email" is enabled and the address is already in use.
+    if (data?.user && data.user.identities?.length === 0) {
+      return { error: 'An account with this email already exists. Please log in.' }
     }
 
     // Auto-provisioning is now handled database-side in the handle_new_user trigger function during signup to eliminate sequential network roundtrips.
-  } catch (err: any) {
-    console.error('Signup action caught an exception:', err)
-    return { error: err?.message || 'An unexpected server error occurred.' }
+  } catch (err: unknown) {
+    const msg = extractErrorMessage(err)
+    console.error('[signup] Caught exception:', msg)
+    return { error: msg }
   }
 
   revalidatePath('/', 'layout')
