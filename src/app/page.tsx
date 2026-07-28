@@ -1,12 +1,11 @@
 "use client"
 
-import { useState } from "react"
 import Link from "next/link"
 import { 
-  BarChart3, Users, Briefcase, Ticket, Zap, Shield, Globe, 
+  BarChart3, Users, Briefcase, Ticket, Zap,
   Layers, LayoutTemplate, 
-  Settings2, Fingerprint, Command, CheckCircle2,
-  Orbit, Database, Workflow, Monitor, ArrowRight
+  Command, CheckCircle2,
+  Monitor
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
