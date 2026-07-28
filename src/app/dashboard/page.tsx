@@ -15,24 +15,38 @@ export const metadata: Metadata = {
 
 export default async function DashboardPage() {
   const supabase = await createClient()
-  const profileRaw = await getUserProfile(supabase)
 
-  if (!profileRaw) {
+  // First verify the user is actually authenticated
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
     redirect('/login')
   }
 
+  // Try to get the full profile — may be null if trigger hasn't run yet
+  const profileRaw = await getUserProfile(supabase)
+
+  // Fall back to auth user data if profile row doesn't exist yet
+  const effectiveProfile = profileRaw ?? {
+    id: user!.id,
+    full_name: user!.user_metadata?.full_name ?? user!.email ?? 'User',
+    email: user!.email ?? '',
+    created_at: user!.created_at,
+    organizations: null,
+    roles: null,
+  }
+
   // Normalise org / role from potential array or single object shapes
-  const orgsRaw = profileRaw.organizations as unknown
+  const orgsRaw = effectiveProfile.organizations as unknown
   const org: OrgShape | null = Array.isArray(orgsRaw)
     ? (orgsRaw[0] as OrgShape) ?? null
     : (orgsRaw as OrgShape | null)
 
-  const rolesRaw = profileRaw.roles as unknown
+  const rolesRaw = effectiveProfile.roles as unknown
   const role: RoleShape | null = Array.isArray(rolesRaw)
     ? (rolesRaw[0] as RoleShape) ?? null
     : (rolesRaw as RoleShape | null)
 
-  const rawCreatedAt = (profileRaw as Record<string, unknown>).created_at
+  const rawCreatedAt = (effectiveProfile as Record<string, unknown>).created_at
   const joinedDate = typeof rawCreatedAt === 'string'
     ? new Date(rawCreatedAt).toLocaleDateString('en-US', {
         year: 'numeric',
@@ -41,7 +55,7 @@ export default async function DashboardPage() {
       })
     : 'Unknown'
 
-  const profile: ProfileShape = profileRaw as ProfileShape
+  const profile: ProfileShape = effectiveProfile as ProfileShape
 
   return (
     <DashboardView
