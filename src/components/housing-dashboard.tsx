@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   Building2, Plus, Search, Home, Landmark,
   User, Calendar, CheckCircle2,
@@ -77,8 +77,16 @@ const DEFAULT_PROPERTIES: Property[] = [
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
+function loadProperties(): Property[] {
+  if (typeof window === 'undefined') return DEFAULT_PROPERTIES
+  const saved = localStorage.getItem(STORAGE_KEY)
+  if (!saved) return DEFAULT_PROPERTIES
+  try { return JSON.parse(saved) as Property[] }
+  catch { return DEFAULT_PROPERTIES }
+}
+
 export default function HousingDashboard() {
-  const [properties, setProperties] = useState<Property[]>([])
+  const [properties, setProperties] = useState<Property[]>(loadProperties)
   const [search, setSearch]         = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [filterType, setFilterType]     = useState('All')
@@ -89,26 +97,6 @@ export default function HousingDashboard() {
   const [isAddOpen, setIsAddOpen]               = useState(false)
   // Inline delete confirmation: stores the property id pending deletion
   const [pendingDeleteId, setPendingDeleteId]   = useState<string | null>(null)
-
-  // ── Persistence ──────────────────────────────────────────────────────────
-
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY)
-    if (saved) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      try { setProperties(JSON.parse(saved)) }
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      catch { setProperties(DEFAULT_PROPERTIES) }
-    } else {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setProperties(DEFAULT_PROPERTIES)
-    }
-  }, [])
-
-  const saveProperties = useCallback((updated: Property[]) => {
-    setProperties(updated)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
-  }, [])
 
   // ── Search debounce (250 ms) ──────────────────────────────────────────────
 

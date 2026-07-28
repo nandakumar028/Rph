@@ -33,13 +33,13 @@ export default async function DashboardPage() {
     : (rolesRaw as RoleShape | null)
 
   const rawCreatedAt = (profileRaw as Record<string, unknown>).created_at
-  const joinedDate = new Date(
-    typeof rawCreatedAt === 'string' ? rawCreatedAt : Date.now()
-  ).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
+  const joinedDate = typeof rawCreatedAt === 'string'
+    ? new Date(rawCreatedAt).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
+    : 'Unknown'
 
   const profile: ProfileShape = profileRaw as ProfileShape
 
